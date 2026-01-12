@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DC Microgrid Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Orbitron:wght@400;500;700;900&family=Roboto+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+
+<body>
+
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <div class="splash-content">
+            <svg class="splash-icon" viewBox="0 0 24 24" width="80" height="80">
+                <path fill="currentColor"
+                    d="M13,2V13H2V2H13M11,4H4V11H11V4M22,2V13H15V2H22M20,4H17V11H20V4M2,22V15H13V22H2M4,20H11V17H4V20M22,22V15H15V22H22M20,20H17V17H20V20Z" />
+            </svg>
+            <h1 class="splash-text">SYSTEM BOOTING...</h1>
+            <div class="splash-loader"></div>
+        </div>
+    </div>
+
+    <!-- AUDIO ELEMENTS -->
+    <audio id="audio-blip" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"
+        preload="auto"></audio>
+    <audio id="audio-alert" src="https://assets.mixkit.co/active_storage/sfx/995/995-preview.mp3"
+        preload="auto"></audio>
+    <audio id="audio-snap" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"
+        preload="auto"></audio>
+
+    <!-- ENERGY MARKET TICKER -->
+    <div id="market-ticker" class="market-ticker">
+        <div class="ticker-content">
+            <span class="ticker-item">GRID PRICE: <span id="ticker-price">0.12</span> $/kWh <span
+                    id="ticker-trend">▲</span></span>
+            <span class="ticker-item">NET METERING: <span id="ticker-net">ACTIVE</span></span>
+            <span class="ticker-item">DEMAND: <span id="ticker-demand">HIGH</span></span>
+            <span class="ticker-item">RENEWABLE SHARE: <span id="ticker-green">45%</span></span>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION DRAWER -->
+    <div id="notification-drawer" class="notification-drawer">
+        <div class="drawer-header">
+            <h3>Notifications</h3>
+            <button id="btn-close-notif" class="btn-icon">✕</button>
+        </div>
+        <div id="notification-list" class="notification-list">
+            <!-- Items injected by JS -->
+            <div class="empty-state">No new notifications</div>
+        </div>
+    </div>
+
+    <!-- ENHANCED WEATHER APPLICATION (Android Style) -->
+    <div id="weather-modal" class="modal-backdrop weather-app-container">
+        <div class="weather-app-window" id="weather-app-bg">
+            <!-- App Header -->
+            <div class="weather-app-header">
+                <button id="btn-close-weather" class="btn-icon-transparent">←</button>
+                <div class="weather-location-title" id="modal-city-name">Bengaluru</div>
+                <button id="btn-weather-search" class="btn-icon-transparent">🔍</button>
+            </div>
+
+            <!-- Search Overlay (Hidden by default) -->
+            <div id="weather-search-overlay" class="weather-search-overlay">
+                <input type="text" id="weather-search-input" placeholder="Search city...">
+                <div id="search-results" class="search-results-list"></div>
+            </div>
+
+            <div class="weather-scroll-content">
+                <!-- NOW Section -->
+                <div class="weather-hero">
+                    <!-- CLOCK APP -->
+                    <div id="weather-clock-full" class="weather-clock preset-1"
+                        style="font-size: 2rem; margin-bottom: 20px;">--:--</div>
+
+                    <div class="hero-temp"><span id="modal-temp">--</span>°</div>
+                    <div class="hero-condition" id="modal-desc">Clear</div>
+                    <div class="hero-high-low">H: <span id="modal-h-temp">--</span>° L: <span
+                            id="modal-l-temp">--</span>°</div>
+                </div>
+
+                <!-- HOURLY Forecast (Horizontal Scroll) -->
+                <div class="weather-section-title">Hourly Forecast</div>
+                <div class="hourly-scroll-container" id="hourly-list">
+                    <!-- JS Injected items -->
+                </div>
+
+                <!-- DAILY Forecast (Vertical List) -->
+                <div class="weather-section-title">10-Day Forecast</div>
+                <div class="daily-list-container" id="forecast-list">
+                    <!-- JS Injected items -->
+                </div>
+
+                <!-- DETAILS Grid -->
+                <div class="weather-details-grid">
+                    <div class="detail-card">
+                        <span class="detail-label">UV Index</span>
+                        <span class="detail-value" id="detail-uv">--</span>
+                        <span class="detail-sub id='detail-uv-text'">Low</span>
+                    </div>
+                    <div class="detail-card">
+                        <span class="detail-label">Sunset</span>
+                        <span class="detail-value" id="detail-sunset">--:--</span>
+                        <span class="detail-sub">Sunrise: <span id="detail-sunrise">--:--</span></span>
+                    </div>
+                    <div class="detail-card">
+                        <span class="detail-label">Wind</span>
+                        <span class="detail-value" id="detail-wind">--</span>
+                        <span class="detail-sub">km/h</span>
+                    </div>
+                    <div class="detail-card">
+                        <span class="detail-label">Humidity</span>
+                        <span class="detail-value" id="detail-humidity">--</span>
+                        <span class="detail-sub">%</span>
+                    </div>
+                    <div class="detail-card">
+                        <span class="detail-label">Pressure</span>
+                        <span class="detail-value" id="detail-pressure">--</span>
+                        <span class="detail-sub">hPa</span>
+                    </div>
+                    <div class="detail-card">
+                        <span class="detail-label">Feeling</span>
+                        <span class="detail-value" id="detail-feels">--</span>
+                        <span class="detail-sub">Actual feel</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: VOICE ASSISTANT OVERLAY (Google Assistant Style) -->
+    <div id="voice-overlay" class="voice-overlay">
+        <div class="voice-content">
+            <div class="voice-header">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Google_Assistant_logo.svg/1024px-Google_Assistant_logo.svg.png"
+                    class="assistant-logo" alt="AI">
+                <span>Microgrid Assistant</span>
+            </div>
+
+            <div class="voice-visualizer">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+
+            <p id="voice-transcript" class="voice-transcript">Hi! How can I help?</p>
+
+            <div class="voice-suggestions">
+                <button class="suggestion-chip">"Switch to Eco Mode"</button>
+                <button class="suggestion-chip">"Show Battery Graphs"</button>
+                <button class="suggestion-chip">"Turn off High Load"</button>
+                <button class="suggestion-chip">"System Status"</button>
+            </div>
+
+            <button id="btn-stop-voice" class="btn-close-overlay">✕</button>
+        </div>
+    </div>
+
+    <!-- VOICE COMMAND FAB (Updated Trigger) -->
+    <button id="btn-voice-command" class="fab-voice" title="Voice Command">
+        <span class="mic-icon">🎤</span>
+    </button>
+
+    <!-- Classes for themes, layout, and sidebar state will be added by JS -->
+    <div class="container layout-compact">
+
+        <!-- ===== SIDEBAR (Nav & MQTT) ===== -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h3 id="site-title-display">Team Spark - Load Manager</h3>
+                <button id="btn-notif-toggle" class="btn-icon-small" title="Notifications">🔔<span id="notif-badge"
+                        class="badge"></span></button>
+            </div>
+
+            <!-- Navigation -->
+            <ul class="sidebar-links">
+                <li><a href="#home" id="nav-home" class="sidebar-link active" data-icon="🏠"><span
+                            class="text">Home</span></a></li>
+                <li><a href="#control-panel" id="nav-control-panel" class="sidebar-link" data-icon="🎛️"><span
+                            class="text">Control
+                            Panel</span></a></li>
+                <li><a href="#history" id="nav-history" class="sidebar-link" data-icon="📜"><span
+                            class="text">History</span></a></li>
+                <li><a href="#graphs" class="sidebar-link" data-icon="📈"><span class="text">Graphs</span></a></li>
+                <li><a href="#settings" class="sidebar-link" data-icon="⚙️"><span class="text">Settings</span></a></li>
+                <li><a href="#test" class="sidebar-link" data-icon="🧪"><span class="text">Test</span></a></li>
+                <li><a href="#" id="btn-toggle-analytics" class="sidebar-link" data-icon="📊"><span class="text">Hide
+                            Analytics</span></a></li>
+            </ul>
+
+            <!-- MQTT Connection Panel -->
+            <div class="mqtt-panel">
+                <div class="mqtt-header">
+                    <h4>Broker (WS)</h4>
+                    <div id="mqtt-status" class="status-badge disconnected">Disconnected</div>
+                </div>
+
+                <label for="broker-url">Server</label>
+                <input type="text" id="broker-url" value="ws://test.mosquitto.org:8080">
+
+                <label for="username">Username</label>
+                <input type="text" id="username" placeholder="(Optional)">
+
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="(Optional)">
+
+                <label for="namespace">Namespace</label>
+                <input type="text" id="namespace" value="microgrid">
+
+                <label for="device-id">Device ID</label>
+                <input type="text" id="device-id" value="esp32_1">
+
+                <div class="btn-group">
+                    <button id="btn-connect" class="btn">Connect</button>
+                    <button id="btn-disconnect" class="btn btn-danger">Disconnect</button>
+                </div>
+            </div>
+
+            <!-- Sidebar Toggle Button -->
+            <button id="btn-toggle-sidebar" class="btn-toggle-sidebar">
+                <span class="icon">«</span>
+                <span class="text">Toggle Menu</span>
+            </button>
+        </nav>
+
+        <!-- ===== MAIN CONTENT (All Pages) ===== -->
+        <main class="main-content">
+
+            <!-- ===== PAGE 1: HOME ===== -->
+            <section class="page-content" id="home">
+                <div class="page-header">
+                    <h2>Home</h2>
+                    <button class="btn" id="btn-edit-tiles">Rename / Edit Tiles</button>
+                </div>
+
+                <!-- Eco-Story Widget & Weather Widget Row -->
+                <div class="widgets-row">
+                    <!-- Eco-Story -->
+                    <div class="card eco-story-widget" id="eco-story-widget">
+                        <div class="eco-content">
+                            <div class="eco-icon">🌱</div>
+                            <div class="eco-text">
+                                <h3>Eco Impact</h3>
+                                <p>You have saved <span id="co2-saved-val">0.00</span> kg of CO2 today!</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Weather Widget -->
+                    <div class="card weather-widget" id="weather-widget">
+                        <div class="weather-content">
+                            <div class="weather-icon" id="weather-icon">☀️</div>
+                            <div class="weather-info">
+                                <h3 id="weather-desc">Sunny</h3>
+                                <p><span id="weather-temp">28</span>°C, Cloud: <span id="weather-cloud">10</span>%</p>
+                            </div>
+                            <!-- CLOCK WIDGET -->
+                            <div id="weather-clock-widget" class="weather-clock preset-1">--:--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid for editable tiles -->
+                <div class="card-grid-main home-grid" id="home-grid-container">
+                    <!-- Sources Row -->
+                    <div class="card draggable-tile" draggable="true" id="tile-source1">
+                        <h4 class="editable-title" data-tile-id="source1">Solar</h4>
+                        <input type="text" class="edit-tile-input" style="display:none;">
+                        <p>Power: <span id="home-solar-power">--</span> W</p>
+                        <p>Voltage: <span id="home-solar-volt">--</span> V</p>
+                    </div>
+                    <div class="card draggable-tile" draggable="true" id="tile-source2">
+                        <h4 class="editable-title" data-tile-id="source2">Thermal</h4>
+                        <input type="text" class="edit-tile-input" style="display:none;">
+                        <p>Power: <span id="home-thermal-power">--</span> W</p>
+                        <p>Voltage: <span id="home-thermal-volt">--</span> V</p>
+                    </div>
+                    <div class="card draggable-tile" draggable="true" id="tile-source3">
+                        <h4 class="editable-title" data-tile-id="source3">Battery</h4>
+                        <input type="text" class="edit-tile-input" style="display:none;">
+                        <div class="battery-visual-container" id="home-batt-visual"></div>
+                        <p>Power: <span id="home-batt-power">--</span> W</p>
+                        <p>SoC: <span id="home-batt-soc">--</span> %</p>
+                        <div id="home-batt-status" class="status-text">--</div>
+                    </div>
+
+                    <!-- Loads Row -->
+                    <div class="card draggable-tile" draggable="true" id="tile-load1">
+                        <h4 class="editable-title" data-tile-id="load1">Low Priority Load</h4>
+                        <input type="text" class="edit-tile-input" style="display:none;">
+                        <p class="stat" id="home-load-low">--</p>
+                    </div>
+                    <div class="card draggable-tile" draggable="true" id="tile-load2">
+                        <h4 class="editable-title" data-tile-id="load2">Medium Priority Load</h4>
+                        <input type="text" class="edit-tile-input" style="display:none;">
+                        <p class="stat" id="home-load-med">--</p>
+                    </div>
+                    <div class="card draggable-tile" draggable="true" id="tile-load3">
+                        <h4 class="editable-title" data-tile-id="load3">High Priority Load</h4>
+                        <input type="text" class="edit-tile-input" style="display:none;">
+                        <p class="stat" id="home-load-high">--</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== PAGE 2: CONTROL PANEL ===== -->
+            <section class="page-content" id="control-panel" style="display: none;">
+                <div class="page-header">
+                    <h2>Control Panel</h2>
+                    <button class="btn btn-edit-layout" data-target="cp-grid">Unlock Layout 🔓</button>
+                </div>
+                <div class="card-grid-main" id="cp-grid">
+                    <!-- Summary Cards -->
+                    <div class="card draggable-tile" draggable="true" id="cp-card-sources">
+                        <h3>Total Sources</h3>
+                        <p class="stat" id="cp-total-sources">0.00 W</p>
+                    </div>
+                    <div class="card draggable-tile" draggable="true" id="cp-card-loads">
+                        <h3>Total Loads</h3>
+                        <p class="stat" id="cp-total-loads">0.00 W</p>
+                    </div>
+                    <div class="card draggable-tile" draggable="true" id="cp-card-balance">
+                        <h3>Balance</h3>
+                        <p class="stat" id="cp-balance">0.00 W</p>
+                        <span id="cp-mode">Mode: --</span>
+                    </div>
+                    <!-- Detailed Source Cards -->
+                    <div class="card draggable-tile" draggable="true" id="cp-card-detailed-solar">
+                        <h4>Solar</h4>
+                        <p>Power: <span id="cp-solar-power">--</span> W</p>
+                        <p>Voltage: <span id="cp-solar-volt">--</span> V</p>
+                        <p>Current: <span id="cp-solar-curr">--</span> A</p>
+                    </div>
+                    <div class="card draggable-tile" draggable="true" id="cp-card-detailed-thermal">
+                        <h4>Thermal</h4>
+                        <p>Power: <span id="cp-thermal-power">--</span> W</p>
+                        <p>Voltage: <span id="cp-thermal-volt">--</span> V</p>
+                        <p>Current: <span id="cp-thermal-curr">--</span> A</p>
+                    </div>
+                    <div class="card draggable-tile" draggable="true" id="cp-card-detailed-battery">
+                        <h4>Battery</h4>
+                        <div class="battery-visual-container" id="cp-batt-visual"></div>
+                        <p>Power: <span id="cp-batt-power">--</span> W</p>
+                        <p>Voltage: <span id="cp-batt-volt">--</span> V</p>
+                        <p>Current: <span id="cp-batt-curr">--</span> A</p>
+                        <p>SoC: <span id="cp-batt-soc">--</span> %</p>
+                        <div id="cp-batt-status" class="status-text">--</div>
+                    </div>
+
+                    <!-- Load Management Table -->
+                    <div class="card card-full-width draggable-tile" draggable="true" id="cp-card-load-mgmt">
+                        <h3>Load Management</h3>
+                        <table class="load-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Power</th>
+                                    <th>State</th>
+                                    <th>Command</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Low Priority Load</td>
+                                    <td><span id="cp-load-low-power">--</span> W</td>
+                                    <td><span id="cp-load-low-status">--</span></td>
+                                    <td>
+                                        <button class="btn-toggle-cmd" data-load="low" data-cmd="on">On</button>
+                                        <button class="btn-toggle-cmd" data-load="low" data-cmd="off">Off</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Medium Priority Load</td>
+                                    <td><span id="cp-load-med-power">--</span> W</td>
+                                    <td><span id="cp-load-med-status">--</span></td>
+                                    <td>
+                                        <button class="btn-toggle-cmd" data-load="med" data-cmd="on">On</button>
+                                        <button class="btn-toggle-cmd" data-load="med" data-cmd="off">Off</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>High Priority Load</td>
+                                    <td><span id="cp-load-high-power">--</span> W</td>
+                                    <td><span id="cp-load-high-status">--</span></td>
+                                    <td>
+                                        <button class="btn-toggle-cmd" data-load="high" data-cmd="on">On</button>
+                                        <button class="btn-toggle-cmd" data-load="high" data-cmd="off">Off</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="mode-control">
+                            <h4>System Mode:</h4>
+                            <button class="btn" data-mode="normal">Normal</button>
+                            <button class="btn" data-mode="eco">Eco</button>
+                            <button class="btn" data-mode="boost">Boost</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== PAGE 3: HISTORY ===== -->
+            <section class="page-content" id="history" style="display: none;">
+                <div class="page-header">
+                    <h2>History</h2>
+                    <div class="header-actions">
+                        <button class="btn btn-edit-layout" data-target="history-grid">Unlock Layout 🔓</button>
+                        <button class="btn" id="btn-export-csv">Export CSV</button>
+                    </div>
+                </div>
+                <div class="card-grid-main" id="history-grid">
+                    <div class="card card-full-width draggable-tile" draggable="true" id="hist-card-bill">
+                        <h3>Bill Estimator</h3>
+                        <p>Estimated Bill: <span id="hist-bill-est">0.00</span> INR</p>
+                        <p class="small-text">Based on total load consumption and configured rate.</p>
+                    </div>
+                    <div class="card draggable-tile" draggable="true" id="hist-card-solar">
+                        <h4>Solar</h4>
+                        <p>Total Supplied: <span id="hist-solar-total">--</span> kWh</p>
+                        <button class="btn btn-small btn-history-graph" data-id="solar">More...</button>
+                    </div>
+                    <div class="card draggable-tile" draggable="true" id="hist-card-thermal">
+                        <h4>Thermal</h4>
+                        <p>Total Supplied: <span id="hist-thermal-total">--</span> kWh</p>
+                        <button class="btn btn-small btn-history-graph" data-id="thermal">More...</button>
+                    </div>
+                    <div class="card draggable-tile" draggable="true" id="hist-card-battery">
+                        <h4>Battery</h4>
+                        <p>Avg SoC: <span id="hist-batt-avg">--</span> %</p>
+                        <button class="btn btn-small btn-history-graph" data-id="battery">More...</button>
+                    </div>
+                    <div class="card draggable-tile" draggable="true" id="hist-card-load-low">
+                        <h4>Low Load</h4>
+                        <p>Total Consumed: <span id="hist-low-total">--</span> kWh</p>
+                        <button class="btn btn-small btn-history-graph" data-id="load-low">More...</button>
+                    </div>
+                    <div class="card draggable-tile" draggable="true" id="hist-card-load-med">
+                        <h4>Medium Load</h4>
+                        <p>Total Consumed: <span id="hist-med-total">--</span> kWh</p>
+                        <button class="btn btn-small btn-history-graph" data-id="load-med">More...</button>
+                    </div>
+                    <div class="card draggable-tile" draggable="true" id="hist-card-load-high">
+                        <h4>High Load</h4>
+                        <p>Total Consumed: <span id="hist-high-total">--</span> kWh</p>
+                        <button class="btn btn-small btn-history-graph" data-id="load-high">More...</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== PAGE 4: GRAPHS ===== -->
+            <section class="page-content" id="graphs" style="display:none;">
+                <div class="page-header">
+                    <h2>Graphs</h2>
+                </div>
+
+                <div class="graphs-layout">
+                    <!-- Left: asset tabs -->
+                    <div class="graphs-tabs">
+                        <!-- 6 fixed tabs -->
+                        <button class="graphs-tab-btn active" data-key="solar">Solar</button>
+                        <button class="graphs-tab-btn" data-key="thermal">Thermal</button>
+                        <button class="graphs-tab-btn" data-key="battery">Battery</button>
+                        <button class="graphs-tab-btn" data-key="loadLow">Low Load</button>
+                        <button class="graphs-tab-btn" data-key="loadMed">Medium Load</button>
+                        <button class="graphs-tab-btn" data-key="loadHigh">High Load</button>
+                        <!-- 3 custom tabs -->
+                        <button class="graphs-tab-btn custom" data-key="custom1">Custom 1</button>
+                        <button class="graphs-tab-btn custom" data-key="custom2">Custom 2</button>
+                        <button class="graphs-tab-btn custom" data-key="custom3">Custom 3</button>
+                    </div>
+
+                    <!-- Right: main chart + metric tabs + custom config -->
+                    <div class="graphs-main">
+                        <div class="graphs-header">
+                            <h3 id="graphs-active-title">Solar</h3>
+                            <div class="graphs-current" id="graphs-current-values">
+                                P: -- W &nbsp;&nbsp; V: -- V &nbsp;&nbsp; I: -- A
+                            </div>
+                        </div>
+
+                        <!-- Metric tabs: separate graph view for each value -->
+                        <div class="graphs-metric-tabs">
+                            <button class="graphs-metric-btn active" data-metric="p">Power (W)</button>
+                            <button class="graphs-metric-btn" data-metric="v">Voltage (V)</button>
+                            <button class="graphs-metric-btn" data-metric="i">Current (A)</button>
+                            <button class="graphs-metric-btn" data-metric="all">All (P+V+I)</button>
+                        </div>
+
+                        <div class="chart-container graphs-chart-container">
+                            <canvas id="graphsMainChart"></canvas>
+                        </div>
+
+                        <!-- Custom tab configuration -->
+                        <div class="graphs-custom-config" id="graphs-custom-config" style="display:none;">
+                            <h4>Custom Tab Configuration</h4>
+                            <div class="graphs-custom-grid">
+                                <div>
+                                    <label>Tab Name</label>
+                                    <input type="text" id="custom-tab-name" placeholder="My Graph">
+                                </div>
+                                <div>
+                                    <label>Source / Load</label>
+                                    <select id="custom-tab-source">
+                                        <option value="solar">Solar</option>
+                                        <option value="thermal">Thermal</option>
+                                        <option value="battery">Battery</option>
+                                        <option value="loadLow">Low Load</option>
+                                        <option value="loadMed">Medium Load</option>
+                                        <option value="loadHigh">High Load</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label>Metrics (Power / Voltage / Current)</label>
+                                    <select id="custom-tab-metrics" multiple>
+                                        <option value="p">Power (W)</option>
+                                        <option value="v">Voltage (V)</option>
+                                        <option value="i">Current (A)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button class="btn" id="custom-tab-save">Save Custom Tab</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== PAGE 5: SETTINGS ===== -->
+            <section class="page-content" id="settings" style="display: none;">
+                <div class="page-header">
+                    <h2>Settings</h2>
+                </div>
+                <div class="card-grid-main">
+                    <div class="card">
+                        <h3>Branding</h3>
+                        <label for="site-title-input">Site Title</label>
+                        <input type="text" id="site-title-input" value="Team Spark - Load Manager">
+                        <button class="btn" id="btn-save-title" style="margin-top: 10px;">Save</button>
+                    </div>
+
+                    <div class="card">
+                        <h3>Theme</h3>
+                        <p>Select your preferred mode.</p>
+                        <div class="btn-group theme-toggle">
+                            <button id="btn-theme-light" class="btn">Light</button>
+                            <button id="btn-theme-dark" class="btn">Dark</button>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Visuals -->
+                    <div class="card">
+                        <h3>Advanced Visuals</h3>
+
+                        <label>Background Style</label>
+                        <select id="bg-selector"
+                            style="width: 100%; padding: 8px; margin-bottom: 15px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg-card); color: var(--color-text);">
+                            <option value="default">Default Gradient</option>
+                            <option value="cyber">Cyber Grid</option>
+                            <option value="polka">Polka Dots</option>
+                        </select>
+
+                        <label>Card Transparency</label>
+                        <input type="range" id="transparency-slider" min="0.5" max="1" step="0.05" value="0.85"
+                            style="width: 100%; margin-bottom: 15px;">
+
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="chart-style-toggle" checked>
+                            Smooth Charts (Tension 0.4)
+                        </label>
+                    </div>
+
+                    <!-- Color Theme Presets -->
+                    <div class="card">
+                        <h3>Color Theme</h3>
+                        <p>Quickly switch between preset accent colors.</p>
+                        <div class="color-theme-selector">
+                            <button class="btn-color-theme" data-color="#6a5af9" title="Purple"></button>
+                            <button class="btn-color-theme" data-color="#007bff" title="Blue"></button>
+                            <button class="btn-color-theme" data-color="#28a745" title="Green"></button>
+                            <button class="btn-color-theme" data-color="#fd7e14" title="Orange"></button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Accent Color</h3>
+                        <p>Fine-tune the accent color.</p>
+                        <input type="color" id="accent-color-picker" class="accent-color-input" value="#6a5af9">
+                        <p class="color-value-display" id="color-value-display">rgb(106, 90, 249)</p>
+                    </div>
+
+                    <div class="card">
+                        <h3>Template (Layout)</h3>
+                        <p>Select your preferred layout.</p>
+                        <div class="btn-group layout-toggle">
+                            <button id="btn-layout-compact" class="btn">Compact</button>
+                            <button id="btn-layout-wide" class="btn">Wide</button>
+                        </div>
+                    </div>
+
+                    <!-- NEW: Rename Assets -->
+                    <div class="card card-full-width">
+                        <h3>Rename Assets</h3>
+                        <div class="settings-grid">
+                            <div>
+                                <h4>Sources</h4>
+                                <label>Source 1 (Solar)</label>
+                                <input type="text" id="rename-source1" placeholder="Solar">
+                                <label>Source 2 (Thermal)</label>
+                                <input type="text" id="rename-source2" placeholder="Thermal">
+                                <label>Source 3 (Battery)</label>
+                                <input type="text" id="rename-source3" placeholder="Battery">
+                            </div>
+                            <div>
+                                <h4>Loads</h4>
+                                <label>Load 1 (Low)</label>
+                                <input type="text" id="rename-load1" placeholder="Low Priority Load">
+                                <label>Load 2 (Medium)</label>
+                                <input type="text" id="rename-load2" placeholder="Medium Priority Load">
+                                <label>Load 3 (High)</label>
+                                <input type="text" id="rename-load3" placeholder="High Priority Load">
+                            </div>
+                        </div>
+                        <button class="btn" id="btn-save-renames" style="margin-top: 15px;">Save Names</button>
+                    </div>
+
+                    <!-- NEW: Weather Display Settings -->
+                    <div class="card card-full-width">
+                        <h3>Weather Display</h3>
+
+                        <div class="settings-grid">
+                            <div>
+                                <h4>Theme Mode</h4>
+                                <select id="weather-theme-select" class="styled-select">
+                                    <option value="auto">Auto (Live Weather)</option>
+                                    <option value="light">Light (Day Animations)</option>
+                                    <option value="dark">Dark (Night Animations)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <h4>Clock Style (10 Presets)</h4>
+                                <select id="weather-clock-style" class="styled-select">
+                                    <option value="preset-1">Preset 1: Minimal</option>
+                                    <option value="preset-2">Preset 2: Digital</option>
+                                    <option value="preset-3">Preset 3: Retro</option>
+                                    <option value="preset-4">Preset 4: Elegant</option>
+                                    <option value="preset-5">Preset 5: Neon</option>
+                                    <option value="preset-6">Preset 6: Bold</option>
+                                    <option value="preset-7">Preset 7: Thin</option>
+                                    <option value="preset-8">Preset 8: Stacked</option>
+                                    <option value="preset-9">Preset 9: Gradient</option>
+                                    <option value="preset-10">Preset 10: Glitch</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:15px">
+                            <label class="toggle-switch-label">
+                                <input type="checkbox" id="weather-clock-visual-preview-toggle" checked>
+                                Show Real-Time Clock on Widget & App
+                            </label>
+                            <button class="btn" id="btn-save-weather-settings">Save Preference</button>
+                        </div>
+                    </div>
+
+                    <!-- NEW: Bill Estimator Settings -->
+                    <div class="card">
+                        <h3>Bill Estimator</h3>
+                        <label>Electricity Rate (₹/kWh)</label>
+                        <input type="number" id="bill-rate-input" placeholder="e.g. 10" step="0.1">
+
+                        <div style="margin-top: 15px;">
+                            <label>Billing Calculation Source</label>
+                            <div class="radio-group">
+                                <label><input type="radio" name="bill-source" value="solar" checked> Solar</label>
+                                <label><input type="radio" name="bill-source" value="thermal"> Thermal</label>
+                                <label><input type="radio" name="bill-source" value="loads"> Loads (Total)</label>
+                            </div>
+                        </div>
+
+                        <button class="btn" id="btn-save-rate" style="margin-top: 10px;">Save Settings</button>
+                    </div>
+
+                    <!-- NEW: History Visibility Settings -->
+                    <div class="card card-full-width">
+                        <h3>History Tab Display</h3>
+                        <p>Select which parameters to show in the History tab.</p>
+                        <div class="checkbox-group-grid">
+                            <label><input type="checkbox" class="hist-toggle" value="solar" checked> Solar</label>
+                            <label><input type="checkbox" class="hist-toggle" value="thermal" checked> Thermal</label>
+                            <label><input type="checkbox" class="hist-toggle" value="battery" checked> Battery</label>
+                            <label><input type="checkbox" class="hist-toggle" value="loadLow" checked> Low Load</label>
+                            <label><input type="checkbox" class="hist-toggle" value="loadMed" checked> Medium
+                                Load</label>
+                            <label><input type="checkbox" class="hist-toggle" value="loadHigh" checked> High
+                                Load</label>
+                        </div>
+                        <button class="btn" id="btn-save-history-vis" style="margin-top: 10px;">Save Display</button>
+                    </div>
+
+
+                    <!-- NEW: Layout Management System -->
+                    <div class="card card-full-width">
+                        <h3>Layout Manager</h3>
+                        <p>Select scope and apply predefined layouts or customize your own.</p>
+
+                        <div class="layout-controls">
+                            <label>Scope:</label>
+                            <select id="layout-scope-select" class="styled-select">
+                                <option value="home">Home Dashboard</option>
+                                <option value="control-panel">Control Panel</option>
+                                <option value="history">History Page</option>
+                            </select>
+                        </div>
+
+                        <div class="layout-grid-selector" id="layout-list">
+                            <!-- Populated by JS -->
+                        </div>
+
+                        <div class="layout-actions"
+                            style="margin-top: 15px; border-top: 1px solid var(--color-border); padding-top: 10px;">
+                            <button class="btn btn-primary" id="btn-apply-layout">Apply Selected Layout</button>
+                            <button class="btn btn-secondary" id="btn-customize-layout">Customize View...</button>
+                        </div>
+                    </div>
+
+                    <!-- NEW: Battery Visuals -->
+                    <div class="card card-full-width">
+                        <h3>Battery Visual Style</h3>
+                        <p>Select a visual representation for battery status.</p>
+                        <div class="visual-selector">
+                            <div class="visual-option" data-visual="1">
+                                <div class="visual-preview v1"></div>
+                                <span>Standard</span>
+                            </div>
+                            <div class="visual-option" data-visual="2">
+                                <div class="visual-preview v2"></div>
+                                <span>Circular</span>
+                            </div>
+                            <div class="visual-option" data-visual="3">
+                                <div class="visual-preview v3"></div>
+                                <span>Pulsing</span>
+                            </div>
+                            <div class="visual-option" data-visual="4">
+                                <div class="visual-preview v4"></div>
+                                <span>Flow</span>
+                            </div>
+                            <div class="visual-option" data-visual="5">
+                                <div class="visual-preview v5"></div>
+                                <span>Digital</span>
+                            </div>
+                            <div class="visual-option" data-visual="6">
+                                <div class="visual-preview v6"></div>
+                                <span>Arc</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- NEW: Interaction & Animation -->
+                    <div class="card">
+                        <h3>Interaction & Motion</h3>
+                        <label class="toggle-switch-label">
+                            <input type="checkbox" id="edit-mode-toggle">
+                            Edit Mode (Drag & Drop)
+                        </label>
+
+                        <label class="toggle-switch-label">
+                            <input type="checkbox" id="voice-announcements-toggle" checked>
+                            Voice Announcements
+                        </label>
+
+                        <label style="margin-top: 15px; display:block;">Edit Animation Style</label>
+                        <select id="edit-animation-style"
+                            style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg-card); color: var(--color-text);">
+                            <option value="wiggle">Smartphone Wiggle</option>
+                            <option value="float">Elevated Float</option>
+                            <option value="pulse">Neon Pulse</option>
+                            <option value="ghost">Cinematic Ghost</option>
+                            <option value="blueprint">Engineering Blueprint</option>
+                        </select>
+                    </div>
+
+                    <!-- NEW: Branding Extras -->
+                    <div class="card">
+                        <h3>Identity & Extras</h3>
+                        <label>Custom Logo</label>
+                        <input type="file" id="logo-uploader" accept="image/*"
+                            style="width: 100%; margin-bottom: 10px;">
+
+                        <label class="toggle-switch-label">
+                            <input type="checkbox" id="cinematic-credits-toggle">
+                            Show Cinematic Credits
+                        </label>
+
+                        <label style="margin-top: 15px; display:block;">Project Mode</label>
+                        <select id="project-mode-selector"
+                            style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-bg-card); color: var(--color-text);">
+                            <option value="standard">Standard</option>
+                            <option value="lifi">Li-Fi Mode</option>
+                            <option value="smartgrid">Smart Grid Mode</option>
+                            <option value="wireless">Wireless Power Mode</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== PAGE 6: TEST ===== -->
+            <section class="page-content" id="test" style="display:none;">
+                <div class="page-header">
+                    <h2>Test & Simulation</h2>
+                </div>
+
+                <div class="card test-card">
+                    <p class="test-intro">
+                        Use this page to verify that all dashboard elements react correctly.
+                        You can push manual test readings or enable automatic random simulation.
+                    </p>
+
+                    <!-- MANUAL INPUT GRID -->
+                    <div class="test-grid">
+                        <div>
+                            <h3>Solar</h3>
+                            <label>Power (W)</label>
+                            <input type="number" id="test-solar-power" placeholder="1000">
+                            <label>Voltage (V)</label>
+                            <input type="number" id="test-solar-volt" placeholder="12">
+                        </div>
+                        <div>
+                            <h3>Thermal</h3>
+                            <label>Power (W)</label>
+                            <input type="number" id="test-thermal-power" placeholder="500">
+                            <label>Voltage (V)</label>
+                            <input type="number" id="test-thermal-volt" placeholder="12">
+                        </div>
+                        <div>
+                            <h3>Battery</h3>
+                            <label>Power (W)</label>
+                            <input type="number" id="test-batt-power" placeholder="-50">
+                            <label>Voltage (V)</label>
+                            <input type="number" id="test-batt-volt" placeholder="12">
+                            <label>SoC (%)</label>
+                            <input type="number" id="test-batt-soc" placeholder="80">
+                        </div>
+                        <div>
+                            <h3>Loads</h3>
+                            <label>Low Load Power (W)</label>
+                            <input type="number" id="test-load-low-power" placeholder="200">
+                            <label>Medium Load Power (W)</label>
+                            <input type="number" id="test-load-med-power" placeholder="500">
+                            <label>High Load Power (W)</label>
+                            <input type="number" id="test-load-high-power" placeholder="800">
+                        </div>
+                    </div>
+
+                    <div class="test-footer">
+                        <button class="btn btn-success" id="btn-test-apply">Apply Manual Test Data</button>
+                        <span class="test-note">Manual test updates everything immediately without ESP32.</span>
+                    </div>
+                </div>
+
+                <!-- RANDOM MODE CARD -->
+                <div class="card test-card">
+                    <h3>Random Simulation Mode</h3>
+                    <p class="test-intro">
+                        Enable automatic random values for quick demo. Values are updated every 1 second and
+                        are applied to the entire dashboard (home, control panel, history, graphs).
+                    </p>
+
+                    <div class="random-controls">
+                        <button class="btn" id="btn-random-toggle">Start Random</button>
+                        <button class="btn btn-small" id="btn-random-settings-toggle">Random Settings</button>
+                        <span class="test-note" id="random-status-label">Random mode is OFF.</span>
+                    </div>
+
+                    <!-- RANDOM SETTINGS (hidden until button clicked) -->
+                    <div id="random-settings-panel" class="random-settings" style="display:none;">
+                        <h4>Random Configuration</h4>
+                        <p class="test-intro">
+                            Choose which values are random and set their ranges.
+                            Any value not marked "Random" is treated as fixed and uses the value you enter.
+                        </p>
+
+                        <div class="random-grid">
+                            <!-- Sources -->
+                            <div class="random-section">
+                                <h4>Sources</h4>
+
+                                <div class="random-row">
+                                    <div class="random-row-header">
+                                        <strong>Solar Power (W)</strong>
+                                        <label><input type="checkbox" id="rand-solar-power-enabled"> Random</label>
+                                    </div>
+                                    <div class="random-row-body">
+                                        <label>Min</label>
+                                        <input type="number" id="rand-solar-power-min" placeholder="200">
+                                        <label>Max</label>
+                                        <input type="number" id="rand-solar-power-max" placeholder="1500">
+                                    </div>
+                                </div>
+
+                                <div class="random-row">
+                                    <div class="random-row-header">
+                                        <strong>Thermal Power (W)</strong>
+                                        <label><input type="checkbox" id="rand-thermal-power-enabled"> Random</label>
+                                    </div>
+                                    <div class="random-row-body">
+                                        <label>Min</label>
+                                        <input type="number" id="rand-thermal-power-min" placeholder="100">
+                                        <label>Max</label>
+                                        <input type="number" id="rand-thermal-power-max" placeholder="800">
+                                    </div>
+                                </div>
+
+                                <div class="random-row">
+                                    <div class="random-row-header">
+                                        <strong>Battery SoC (%)</strong>
+                                        <label><input type="checkbox" id="rand-batt-soc-enabled"> Random</label>
+                                    </div>
+                                    <div class="random-row-body">
+                                        <label>Min</label>
+                                        <input type="number" id="rand-batt-soc-min" placeholder="30">
+                                        <label>Max</label>
+                                        <input type="number" id="rand-batt-soc-max" placeholder="100">
+                                    </div>
+                                </div>
+
+                                <div class="random-row">
+                                    <div class="random-row-header">
+                                        <strong>Source Voltage (V)</strong>
+                                    </div>
+                                    <div class="random-row-body">
+                                        <span class="test-note">
+                                            All sources use fixed voltage while random mode is running.
+                                            Default is 12&nbsp;V. Change here if needed.
+                                        </span>
+                                        <label>Solar V</label>
+                                        <input type="number" id="rand-solar-voltage-fixed" value="12">
+                                        <label>Thermal V</label>
+                                        <input type="number" id="rand-thermal-voltage-fixed" value="12">
+                                        <label>Battery V</label>
+                                        <input type="number" id="rand-batt-voltage-fixed" value="12">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Loads -->
+                            <div class="random-section">
+                                <h4>Loads</h4>
+
+                                <div class="random-row">
+                                    <div class="random-row-header">
+                                        <strong>Low Load Power (W)</strong>
+                                        <label><input type="checkbox" id="rand-load-low-enabled"> Random</label>
+                                    </div>
+                                    <div class="random-row-body">
+                                        <label>Min</label>
+                                        <input type="number" id="rand-load-low-min" placeholder="0">
+                                        <label>Max</label>
+                                        <input type="number" id="rand-load-low-max" placeholder="300">
+                                    </div>
+                                </div>
+
+                                <div class="random-row">
+                                    <div class="random-row-header">
+                                        <strong>Medium Load Power (W)</strong>
+                                        <label><input type="checkbox" id="rand-load-med-enabled"> Random</label>
+                                    </div>
+                                    <div class="random-row-body">
+                                        <label>Min</label>
+                                        <input type="number" id="rand-load-med-min" placeholder="0">
+                                        <label>Max</label>
+                                        <input type="number" id="rand-load-med-max" placeholder="800">
+                                    </div>
+                                </div>
+
+                                <div class="random-row">
+                                    <div class="random-row-header">
+                                        <strong>High Load Power (W)</strong>
+                                        <label><input type="checkbox" id="rand-load-high-enabled"> Random</label>
+                                    </div>
+                                    <div class="random-row-body">
+                                        <label>Min</label>
+                                        <input type="number" id="rand-load-high-min" placeholder="0">
+                                        <label>Max</label>
+                                        <input type="number" id="rand-load-high-max" placeholder="1500">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p class="test-note">
+                            When load power &gt; 0, the corresponding load is considered ON in Control Panel and
+                            current is calculated automatically from P and the fixed voltage.
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- ===== ANALYTICS SIDEBAR (Graphs) ===== -->
+        <aside class="analytics-sidebar">
+            <h3>Analytics</h3>
+
+            <div class="card">
+                <h4>Battery Percentage</h4>
+                <div class="chart-container">
+                    <canvas id="batteryChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h4>Low Load (W)</h4>
+                <div class="chart-container">
+                    <canvas id="lowLoadChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h4>Medium Load (W)</h4>
+                <div class="chart-container">
+                    <canvas id="medLoadChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h4>High Load (W)</h4>
+                <div class="chart-container">
+                    <canvas id="highLoadChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h4>Load Rating</h4>
+                <div class="load-rating">
+                    <div>
+                        <p>Low</p>
+                        <p>Avg: <span id="analytics-low-avg">0.00</span> W</p>
+                        <p>Peak: <span id="analytics-low-peak">0.00</span> W</p>
+                    </div>
+                    <div>
+                        <p>Medium</p>
+                        <p>Avg: <span id="analytics-med-avg">0.00</span> W</p>
+                        <p>Peak: <span id="analytics-med-peak">0.00</span> W</p>
+                    </div>
+                    <div>
+                        <p>High</p>
+                        <p>Avg: <span id="analytics-high-avg">0.00</span> W</p>
+                        <p>Peak: <span id="analytics-high-peak">0.00</span> W</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Cinematic Credits Footer -->
+        <div id="cinematic-credits" class="cinematic-footer" style="display: none;">
+            <p>Directed & Engineered by <span class="credit-name">Naveen G A</span></p>
+        </div>
+
+    </div> <!-- end .container -->
+
+    <!-- ===== HISTORY GRAPH MODAL (Hidden by default) ===== -->
+    <div id="history-modal-backdrop" style="display: none;">
+        <div id="history-modal" class="card">
+            <div class="modal-header">
+                <h3 id="history-modal-title">History Graph</h3>
+                <button id="history-modal-close" class="btn btn-danger">&times;</button>
+            </div>
+            <div class="chart-container-modal">
+                <canvas id="historyChartCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- External Libraries -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+    <!-- Your Application Logic -->
+    <!-- Firebase Compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <!-- Your Application Logic -->
+    <script src="app.js"></script>
+</body>
+
+</html>
